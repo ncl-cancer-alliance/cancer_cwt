@@ -29,11 +29,14 @@ CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
     DATE_FDSPATHWAYENDDATE DATE, --Date where cancer is confirmed or ruled out
     DATE_TRANSFERTOTREATMENTDATE DATE, --Date between Investigation and Treatment windows
     DATE_TREATMENTSTARTDATE DATE, --Date for Treatment starts
-
+    
     --Waiting Time Adjustment
-    WTA_FIRSTSEENADJUSTMENT NUMBER,
-    WTA_TREATMENTADJUSTMENT NUMBER,
-    WTA_TREATMENTREASON VARCHAR
+    WTA_FIRSTSEENADJUSTMENT NUMBER, --Adjustment for First Seen TTE
+    WTA_TREATMENTADJUSTMENT NUMBER, --Adjustment for Treatment TTE
+    WTA_TREATMENTREASON VARCHAR, --Reason for adjustment for Treatment TTE
+    
+    --Metadata
+    META_SUBMISSIONID NUMBER --Numeric ID for the upload batch in the source
 )
 COMMENT="Dynamic table to use as an univserial base for CWT data."
 TARGET_LAG = "2 hours"
@@ -73,8 +76,24 @@ SELECT
     --Waiting Time Adjustments
     cwt.WAITINGTIMEADJUSTMENTFIRSTSEEN AS WTA_FIRSTSEENADJUSTMENT,
     cwt.WAITINGTIMEADJUSTMENTTREATMENT AS WTA_TREATMENTADJUSTMENT,
-    cwt.WAITINGTIMEADJUSTMENTREASONTREATMENT AS WTA_TREATMENTREASON
+    cwt.WAITINGTIMEADJUSTMENTREASONTREATMENT AS WTA_TREATMENTREASON,
+    --Metadata
+    cwt."UniqSubmissionID" AS META_SUBMISSIONID
 
 FROM "Data_Store_Waiting".CWTDS."CWT001Data" cwt
 
-WHERE cwt."UniqSubmissionID" >= 34
+--Subquery to find the last full record upload
+WHERE cwt."UniqSubmissionID" >= (
+    SELECT "UniqSubmissionID"
+    FROM "Data_Store_Waiting".CWTDS."CWT001Data" cwt
+    GROUP BY "UniqSubmissionID"
+    HAVING COUNT(1) = (
+        SELECT MAX("rows")
+        FROM (
+            SELECT COUNT(1) AS "rows"
+            FROM "Data_Store_Waiting".CWTDS."CWT001Data"
+            GROUP BY "UniqSubmissionID"
+        )
+    )
+)
+
