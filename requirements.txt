@@ -6,8 +6,8 @@
 # Python version = 3.12.*
 
 # Data manipulation
-numpy==2.2.0
-pandas==2.2.3
+# numpy==2.2.0
+# pandas==2.2.3
 
 # Data visualisation
 # plotly == 6.0.1
@@ -19,9 +19,21 @@ pandas==2.2.3
 # dash == 3.0.2
 
 # SQL connections
-pyodbc==5.2.0
-sqlalchemy==2.0.40
-# snowflake==1.2.0
+# pyodbc==5.2.0
+# sqlalchemy==2.0.40
+snowflake==1.5.1
+snowflake-connector-python==3.15.0
+snowflake-snowpark-python==1.32.0
+snowflake._legacy==1.0.1
+snowflake-ml-python==1.8.5
+
+# If using snowflake, you need to use the following numpy and pandas package isntead
+numpy==1.26.4
+pandas==2.2.2
+pyodbc==5.1.0
+sqlalchemy==2.0.31
+requests==2.31.0
+python-dotenv==1.0.1
 
 # Excel output
 # openpyxl==3.1.5
@@ -31,10 +43,10 @@ sqlalchemy==2.0.40
 
 # Requests
 beautifulsoup4==4.13.3
-requests==2.32.3
+# requests==2.32.3
 
 # Environment variables
-python-dotenv==1.1.0
+# python-dotenv==1.1.0
 toml==0.10.2
 
 # Dependencies
