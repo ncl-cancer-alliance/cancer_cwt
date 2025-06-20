@@ -14,10 +14,13 @@ CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
     CWT_PRIMARYDIAGNOSISICD VARCHAR, --Diagnosis code
 
     --GP Fields
+    PC_ICSREGISTRATION VARCHAR,
     PC_PRACTICECODE CHAR(8), --GP Practice Code
-    PC_PRACTICENAME VARCHAR, --GP Practice Name
-    PC_ICSCODE CHAR(3), --ICB Code
-    PC_ICSNAME VARCHAR, --ICS Name
+    
+    --Residence Fields
+    RES_ICSCODE CHAR(3), --ICS of Residence
+    RES_LACODE CHAR(9), --Local Authority of Residence
+    RES_LSOA CHAR(9), --LSOA of Residence
     
     --Pathway Identifiers
     PATHWAY_PRIORITYTYPECODE NUMBER, --Identifier for pathway
@@ -42,11 +45,17 @@ CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
     WTA_TREATMENTADJUSTMENT NUMBER, --Adjustment for Treatment TTE
     WTA_TREATMENTREASON VARCHAR, --Reason for adjustment for Treatment TTE
     
+    --Geo
+    GEO_GP BOOLEAN, --Flag for registered to a NCL GP
+    GEO_RESIDENCE BOOLEAN, --Flag for NCL residents
+    GEO_TRUST BOOLEAN, --Flag for interacting with a NCL Trust
+
+
     --Record Events
-    EVENT_DATEFIRSTSEEN NUMBER, --Flag if the record includes the 2WW Pathway
-    EVENT_CANCERTREATMENTPERIOD NUMBER, --Flag if the record includes the 31D Pathway
-    EVENT_FDS NUMBER, --Flag if the record includes the 28D Pathway
-    EVENT_TREATMENTSTARTDATE NUMBER, --Flag if the record includes the 62D Pathway
+    EVENT_DATEFIRSTSEEN BOOLEAN, --Flag if the record includes the 2WW Pathway
+    EVENT_CANCERTREATMENTPERIOD BOOLEAN, --Flag if the record includes the 31D Pathway
+    EVENT_FDS BOOLEAN, --Flag if the record includes the 28D Pathway
+    EVENT_TREATMENTSTARTDATE BOOLEAN, --Flag if the record includes the 62D Pathway
 
     --Metadata
     META_SUBMISSIONID NUMBER --Numeric ID for the upload batch in the source
@@ -71,7 +80,12 @@ SELECT
     --Breakdowns Fields
     cwt.PRIMARYDIAGNOSISICD AS CWT_PRIMARYDIAGNOSISICD,
     --GP Fields
-    pc.*,
+    cwt.ICS_OF_REGISTRATION AS PC_ICSREGISTRATION,
+    cwt.PDS_GPCODE AS PC_PRACTICECODE,
+    --Residence Fields
+    cwt.ICS_OF_RESIDENCE AS RES_ICSCODE,
+    cwt.LA_OF_RESIDENCE AS RES_LACODE,
+    cwt.LSOA_OF_RESIDENCE AS RES_LSOA,
     --Pathway Identifiers
     cwt.PRIORITYTYPECODE AS PATHWAY_PRIORITYTYPECODE,
     cwt.CANCERTREATMENTEVENTTYPE AS PATHWAY_CANCERTREATMENTEVENTTYPE,
@@ -93,44 +107,28 @@ SELECT
     cwt.WAITINGTIMEADJUSTMENTFIRSTSEEN AS WTA_FIRSTSEENADJUSTMENT,
     cwt.WAITINGTIMEADJUSTMENTTREATMENT AS WTA_TREATMENTADJUSTMENT,
     cwt.WAITINGTIMEADJUSTMENTREASONTREATMENT AS WTA_TREATMENTREASON,
+    --Geo
+    cwt."dmIcbRegistrationSubmitted" = 'QMJ' AS GEO_GP,
+    cwt."dmIcbResidenceSubmitted" = 'QMJ' AS GEO_RESIDENCE,
+    COALESCE(
+        cwt."Organisation_Code_CCG_of_DFS" = '93C' OR
+        cwt."Organisation_Code_CCG_of_FDS" = '93C' OR
+        cwt."Organisation_Code_CCG_of_TSD" = '93C',
+        FALSE
+    ) AS GEO_TRUST,
+    --Event
+    cwt.DATEFIRSTSEEN IS NULL AS EVENT_DATEFIRSTSEEN,
+    cwt.CANCERTREATMENTPERIODSTARTDATE IS NULL AS EVENT_CANCERTREATMENTPERIOD,
+    cwt.CANCERFASTERDIAGNOSISPATHWAYENDDATE IS NULL AS EVENT_FDS,
+    cwt.TREATMENTSTARTDATECANCER IS NULL AS EVENT_TREATMENTSTARTDATE,
     --Metadata
-    cwt."UniqSubmissionID" AS META_SUBMISSIONID,
-    CASE WHEN cwt.DATEFIRSTSEEN IS NULL THEN 0 ELSE 1 END AS EVENT_DATEFIRSTSEEN,
-    CASE WHEN cwt.CANCERTREATMENTPERIODSTARTDATE IS NULL THEN 0 ELSE 1 END AS EVENT_CANCERTREATMENTPERIOD,
-    CASE WHEN cwt.CANCERFASTERDIAGNOSISPATHWAYENDDATE IS NULL THEN 0 ELSE 1 END AS EVENT_FDS,
-    CASE WHEN cwt.TREATMENTSTARTDATECANCER IS NULL THEN 0 ELSE 1 END AS EVENT_TREATMENTSTARTDATE
+    cwt."UniqSubmissionID" AS META_SUBMISSIONID
 
 FROM "Data_Store_Waiting".CWTDS."CWT001Data" cwt
 
 --Left join to filter out outdated records
 LEFT JOIN DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_LATESTSUBMISSION ls
 ON cwt.SK = ls.SK
-
---Left join for GP Information
-LEFT JOIN (
-    --This query does not include PCN or Borough
-    SELECT
-    prac."Organisation_Code" AS "PC_PRACTICECODE", 
-    prac."Organisation_Name" AS "PC_PRACTICENAME",
-    
-    --Get ICB Code and the ICS Name
-    icb."Organisation_Code" AS "PC_ICSCODE",
-    REGEXP_REPLACE(icb."Organisation_Name", '^NHS | Integrated Care Board$', '') AS "PC_ICSNAME"
-    
-    FROM "Dictionary"."dbo"."Organisation" prac
-    
-    --Join Practice to SUB ICB
-    INNER JOIN "Dictionary"."dbo"."Organisation" subicb
-    ON prac."SK_OrganisationID_ParentOrg" = subicb."SK_OrganisationID"
-    
-    --Join SUB ICB to ICB
-    INNER JOIN "Dictionary"."dbo"."Organisation" icb
-    ON subicb."SK_OrganisationID_ParentOrg" = icb."SK_OrganisationID"
-    
-    WHERE prac."SK_OrganisationTypeID" = '43' AND prac."Country" = 'England'
-) pc
-
-ON cwt.PDS_GPCODE = pc.PC_PRACTICECODE
 
 WHERE ls.META_LATESTRECORD = 1
 
