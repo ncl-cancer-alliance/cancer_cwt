@@ -15,6 +15,9 @@ CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
 
     --GP Fields
     PC_PRACTICECODE CHAR(8), --GP Practice Code
+    PC_PRACTICENAME VARCHAR, --GP Practice Name
+    PC_ICSCODE CHAR(3), --ICB Code
+    PC_ICSNAME VARCHAR, --ICS Name
     
     --Pathway Identifiers
     PATHWAY_PRIORITYTYPECODE NUMBER, --Identifier for pathway
@@ -68,7 +71,7 @@ SELECT
     --Breakdowns Fields
     cwt.PRIMARYDIAGNOSISICD AS CWT_PRIMARYDIAGNOSISICD,
     --GP Fields
-    cwt.PDS_GPCODE AS PC_PRACTICECODE,
+    pc.*,
     --Pathway Identifiers
     cwt.PRIORITYTYPECODE AS PATHWAY_PRIORITYTYPECODE,
     cwt.CANCERTREATMENTEVENTTYPE AS PATHWAY_CANCERTREATMENTEVENTTYPE,
@@ -99,8 +102,35 @@ SELECT
 
 FROM "Data_Store_Waiting".CWTDS."CWT001Data" cwt
 
+--Left join to filter out outdated records
 LEFT JOIN DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_LATESTSUBMISSION ls
 ON cwt.SK = ls.SK
+
+--Left join for GP Information
+LEFT JOIN (
+    --This query does not include PCN or Borough
+    SELECT
+    prac."Organisation_Code" AS "PC_PRACTICECODE", 
+    prac."Organisation_Name" AS "PC_PRACTICENAME",
+    
+    --Get ICB Code and the ICS Name
+    icb."Organisation_Code" AS "PC_ICSCODE",
+    REGEXP_REPLACE(icb."Organisation_Name", '^NHS | Integrated Care Board$', '') AS "PC_ICSNAME"
+    
+    FROM "Dictionary"."dbo"."Organisation" prac
+    
+    --Join Practice to SUB ICB
+    INNER JOIN "Dictionary"."dbo"."Organisation" subicb
+    ON prac."SK_OrganisationID_ParentOrg" = subicb."SK_OrganisationID"
+    
+    --Join SUB ICB to ICB
+    INNER JOIN "Dictionary"."dbo"."Organisation" icb
+    ON subicb."SK_OrganisationID_ParentOrg" = icb."SK_OrganisationID"
+    
+    WHERE prac."SK_OrganisationTypeID" = '43' AND prac."Country" = 'England'
+) pc
+
+ON cwt.PDS_GPCODE = pc.PC_PRACTICECODE
 
 WHERE ls.META_LATESTRECORD = 1
 
