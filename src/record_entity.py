@@ -1,12 +1,13 @@
+#General imports
 import toml
-import pandas as pd
 from dotenv import load_dotenv
 from os import getenv
 
+#Snowflake imports
 import snowflake.snowpark.functions as sff
-from snowflake.ml.feature_store import FeatureStore, CreationMode, Entity, FeatureView
-from snowflake.snowpark.context import get_active_session
+from snowflake.ml.feature_store import Entity
 
+#Utility script imports
 import utils.util_snowflake as us
 
 #Reference
@@ -16,6 +17,7 @@ import utils.util_snowflake as us
 load_dotenv(override=True)
 config = toml.load("config.toml")
 
+#Create a Snowflake session
 connection_params = {
     "account": getenv("ACCOUNT"),
     "user": getenv("USER"),
@@ -26,36 +28,23 @@ connection_params = {
     "schema": "CANCER_CWT"
 }
 
-session = us.snowpark_session_create(connection_params)
+session = us.snowpark_session_create(
+    connection_params, "CANCER CWT RECORD ENTITY")
 
-# Add a query tag to the session. This helps with debugging and performance monitoring.
-session.query_tag = {
-    "origin":"sf_sit-is", 
-    "name":"cwt_fs_overview", 
-    "version":{"major":1, "minor":0}, 
-    "attributes":{"is_quickstart":0, "source":"notebook"}
-}
-
-# Print the current role, warehouse, and database/schema
-print(f"role: {session.get_current_role()} | WH: {session.get_current_warehouse()} | DB.SCHEMA: {session.get_fully_qualified_current_schema()}")
-
-# Set up feature store
-fs = FeatureStore(
+#Load the feature store
+fs = us.load_feature_store(
     session=session,
     database=connection_params["database"],
-    name="CANCER_CWT",
-    default_warehouse=connection_params["warehouse"],
-    creation_mode=CreationMode.CREATE_IF_NOT_EXIST,
+    name="CANCER_CWT"
 )
 
 #Entity
 entity_existing = fs.list_entities()
 
 entity_record = Entity(
-    name="RECORD",
+    name="CANCER_CWT_RECORD",
     join_keys=["RECORD_ID"],
-    desc="Record ID"
+    desc="Cancer CWT data Records"
 )
 
-if entity_existing.filter(sff.col("NAME") == "RECORD").count() == 0:
-    fs.register_entity(entity_record)
+fs.register_entity(entity_record)
