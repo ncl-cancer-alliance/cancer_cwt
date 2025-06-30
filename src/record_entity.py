@@ -53,10 +53,9 @@ entity_existing = fs.list_entities()
 
 entity_record = Entity(
     name="RECORD",
-    join_keys=["RECORDID"],
+    join_keys=["RECORD_ID"],
     desc="Record ID"
 )
 
 if entity_existing.filter(sff.col("NAME") == "RECORD").count() == 0:
     fs.register_entity(entity_record)
-
