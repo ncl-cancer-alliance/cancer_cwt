@@ -1,7 +1,7 @@
 CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
     --Entry identifiers
     SK VARCHAR, --UUID for rows in the CWT0001 Source table
-    RECORDID VARCHAR, --UUID for the referral (Not unique)
+    RECORD_ID VARCHAR, --UUID for the referral (Not unique)
 
     --Organisation Fields
     ORG_ACCOUNTABLEINVESTIGATING VARCHAR, --Investigating org for 6 Scernarios
@@ -49,7 +49,6 @@ CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
     GEO_GP BOOLEAN, --Flag for registered to a NCL GP
     GEO_RESIDENCE BOOLEAN, --Flag for NCL residents
     GEO_TRUST BOOLEAN, --Flag for interacting with a NCL Trust
-
 
     --Record Events
     EVENT_DATEFIRSTSEEN BOOLEAN, --Flag if the record includes the 2WW Pathway
