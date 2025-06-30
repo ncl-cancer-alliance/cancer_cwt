@@ -1,5 +1,4 @@
 from snowflake.snowpark.session import Session
-from snowflake.snowpark.context import get_active_session
 
 def snowpark_session_create(connection_params, query_tag=False):
     """
@@ -18,4 +17,26 @@ def snowpark_session_create(connection_params, query_tag=False):
 
     session = Session.builder.configs(connection_params).create()
 
+    if query_tag:
+        session.query_tag = query_tag
+
     return session
+
+def load_entity(feature_store, entity_name):
+
+    """
+    Load a Snowflake Entity by name.
+    feature_store: Object for the relevant feature store
+    entity_name: The name of the target entity
+    Returns:
+        - entity: Object representing the entity
+   """
+
+    try:
+        entity = feature_store.get_entity(name=entity_name)
+    except ValueError:
+        raise Exception(f"{entity_name} entity not found.")
+    except Exception as e:
+        raise e
+
+    return entity
