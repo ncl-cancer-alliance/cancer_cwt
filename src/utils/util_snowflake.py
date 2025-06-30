@@ -32,8 +32,8 @@ def load_feature_store(session, database, name, warehouse="NCL_ANALYTICS_XS"):
     name: Name of the feature store
     warehouse: Name of the default warehouse to use for processing.
     Returns:
-        - entity: Object representing the entity
-   """
+        - fs: Object representing the Feature Store
+    """
     
     fs = FeatureStore(
         session=session,
