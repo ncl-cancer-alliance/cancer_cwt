@@ -79,7 +79,7 @@ connection_params = {
 }
 
 session = us.snowpark_session_create(
-    connection_params, "CANCER CWT RECORD ENTITY")
+    connection_params, "CANCER CWT FEATURE VIEW PATHWAY")
 
 #Load the feature store
 fs = us.load_feature_store(
