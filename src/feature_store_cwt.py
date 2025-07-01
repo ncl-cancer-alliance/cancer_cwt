@@ -3,19 +3,17 @@ import toml
 from dotenv import load_dotenv
 from os import getenv
 
-#Snowflake imports
-import snowflake.snowpark.functions as sff
-from snowflake.ml.feature_store import Entity
+from snowflake.ml.feature_store import FeatureStore, CreationMode
 
 #Utility script imports
 import utils.util_snowflake as us
 
-#Reference
-#https://github.com/ncl-icb-analytics/snowpark_testing/blob/main/FeatureStore.qmd
-
 #Load env settings
 load_dotenv(override=True)
 config = toml.load("config.toml")
+
+#Set the name of the Feature Store
+
 
 #Create a Snowflake session
 connection_params = {
@@ -29,22 +27,13 @@ connection_params = {
 }
 
 session = us.snowpark_session_create(
-    connection_params, "CANCER CWT RECORD ENTITY")
+    connection_params, "CANCER CWT Feature Store Creation")
 
-#Load the feature store
-fs = us.load_feature_store(
+#Create the feature store
+fs = FeatureStore(
     session=session,
     database=connection_params["database"],
-    name="CANCER_CWT"
+    name="CANCER_CWT",
+    default_warehouse=getenv("WAREHOUSE"),
+    creation_mode=CreationMode.CREATE_IF_NOT_EXIST
 )
-
-#Entity
-entity_existing = fs.list_entities()
-
-entity_record = Entity(
-    name="CANCER_CWT_RECORD",
-    join_keys=["RECORD_ID"],
-    desc="Cancer CWT data Records"
-)
-
-fs.register_entity(entity_record)
