@@ -4,7 +4,10 @@ from dotenv import load_dotenv
 from os import getenv
 
 #Snowflake imports
-from snowflake.snowpark.functions import col, is_null, not_, when, lit, coalesce
+from snowflake.snowpark.functions import (
+    col, lit, 
+    not_, is_null, coalesce, when,
+    year, month)
 from snowflake.ml.feature_store import FeatureView
 
 #Utility script imports
@@ -18,6 +21,18 @@ def performance_2ww(df):
         (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") != 17) &
         not_(is_null(col("DATE_CANCERREFERRALTOTREATMENTPERIODSTARTDATE"))) &
         not_(is_null(col("DATE_DATEFIRSTSEEN")))        
+    )
+
+    #Set the Date fields
+    df = df.with_column(
+        "PER_DATE_YEAR",
+        year(col("DATE_DATEFIRSTSEEN"))
+    )
+
+    #Set the Date fields
+    df = df.with_column(
+        "PER_DATE_MONTH",
+        month(col("DATE_DATEFIRSTSEEN"))
     )
 
     #Set the relevant organisation
@@ -57,7 +72,8 @@ def performance_2ww(df):
     )
 
     #Remove unused columns
-    df = df[["RECORD_ID", "PER_ORG", "PER_ORG_NCL", "PER_METRIC", 
+    df = df[["RECORD_ID", "PER_DATE_YEAR", "PER_DATE_MONTH", 
+            "PER_ORG", "PER_ORG_NCL", "PER_METRIC", 
             "PER_VALUE", "PER_NUMERATOR", "PER_DENOMINATOR"]]
 
     print("Sample of output:")
@@ -107,6 +123,8 @@ cwt_pathway_fv = FeatureView(
    refresh_mode="incremental"
 ).attach_feature_desc(
    {
+       "PER_DATE_YEAR": "Metric date - Year",
+       "PER_DATE_MONTH": "Metric date - Month",
        "PER_ORG": "Associated organisation for the metric",
        "PER_ORG_NCL": "Flag to say whether the organisation is an NCL trust for this metric",
        "PER_METRIC": "Performance metric name",
