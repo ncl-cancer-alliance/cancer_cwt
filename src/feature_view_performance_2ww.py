@@ -26,6 +26,11 @@ def performance_2ww(df):
         df["ORG_FIRSTSEEN"]
     )
 
+    df = df.with_column(
+        "PER_ORG_NCL",
+        df["GEO_TRUST_DATEFIRSTSEEN"]
+    )
+
     #Set the metric name
     df = df.with_column(
         "PER_METRIC",
@@ -52,7 +57,7 @@ def performance_2ww(df):
     )
 
     #Remove unused columns
-    df = df[["RECORD_ID", "PER_ORG", "PER_METRIC", 
+    df = df[["RECORD_ID", "PER_ORG", "PER_ORG_NCL", "PER_METRIC", 
             "PER_VALUE", "PER_NUMERATOR", "PER_DENOMINATOR"]]
 
     print("Sample of output:")
@@ -103,6 +108,7 @@ cwt_pathway_fv = FeatureView(
 ).attach_feature_desc(
    {
        "PER_ORG": "Associated organisation for the metric",
+       "PER_ORG_NCL": "Flag to say whether the organisation is an NCL trust for this metric",
        "PER_METRIC": "Performance metric name",
        "PER_VALUE": "Numeric value of the metric",
        "PER_NUMERATOR": "Whether the value is a breach (and quantity)",
