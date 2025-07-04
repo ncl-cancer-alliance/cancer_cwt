@@ -6,7 +6,7 @@ from os import getenv
 #Snowflake imports
 from snowflake.snowpark.functions import (
     col, lit, 
-    not_, is_null, coalesce, when,
+    not_, is_null, coalesce, when, in_,
     year, month)
 from snowflake.ml.feature_store import FeatureView
 
@@ -14,55 +14,74 @@ from snowflake.ml.feature_store import FeatureView
 import utils.util_snowflake as us
 
 #Function to derive the 2ww performance figures
-def performance_2ww(df):
+def performance_fds(df):
+
+    #Calculate the PER_VALUE first since it is needed in the filter for valid records
+    ##Determine which end date column to use
+    df = df.with_column(
+        "TEMP_FDSENDDATE",
+        when((
+                col("DATE_CANCERTREATMENTPERIODSTARTDATE") < 
+                col("DATE_FDSPATHWAYENDDATE")
+            ),
+            col("DATE_CANCERTREATMENTPERIODSTARTDATE"))
+        .otherwise(col("DATE_FDSPATHWAYENDDATE"))
+    )
+
+    df = df.with_column(
+        "PER_VALUE",
+        df["TEMP_FDSENDDATE"] - 
+        df["DATE_CANCERREFERRALTOTREATMENTPERIODSTARTDATE"] -
+        coalesce(df["WTA_FIRSTSEENADJUSTMENT"], lit(0))
+    )
+
     #Filter out to only valid 2ww records
     df = df.where(
-        (col("PATHWAY_PRIORITYTYPECODE") == 3) &
-        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") != 17) &
+        (
+            (in_([col("PATHWAY_FDPENDREASON")], ["01", "02", "04"])) |
+            (
+                (col("PATHWAY_FDPENDREASON") == "03") &
+                (col("PATHWAY_FDPEXCLUSIONREASON") == "01") &
+                (col("PER_VALUE") > 28)
+            )
+        ) &
         not_(is_null(col("DATE_CANCERREFERRALTOTREATMENTPERIODSTARTDATE"))) &
-        not_(is_null(col("DATE_DATEFIRSTSEEN")))        
+        not_(is_null(col("DATE_FDSPATHWAYENDDATE")))        
     )
 
     #Set the Date fields
     df = df.with_column(
         "PER_DATE_YEAR",
-        year(col("DATE_DATEFIRSTSEEN"))
+        year(col("DATE_FDSPATHWAYENDDATE"))
     )
 
     #Set the Date fields
     df = df.with_column(
         "PER_DATE_MONTH",
-        month(col("DATE_DATEFIRSTSEEN"))
+        month(col("DATE_FDSPATHWAYENDDATE"))
     )
 
     #Set the relevant organisation
     df = df.with_column(
         "PER_ORG",
-        df["ORG_FIRSTSEEN"]
+        df["ORG_FDPEND"]
     )
 
     df = df.with_column(
         "PER_ORG_NCL",
-        df["GEO_TRUST_DATEFIRSTSEEN"]
+        df["GEO_TRUST_FDS"]
     )
 
     #Set the metric name
     df = df.with_column(
         "PER_METRIC",
-        lit("2WW")
+        lit("FDS")
     )
 
-    #Calculate the 2ww value
-    df = df.with_column(
-        "PER_VALUE",
-        df["DATE_DATEFIRSTSEEN"] - 
-        df["DATE_CANCERREFERRALTOTREATMENTPERIODSTARTDATE"] -
-        coalesce(df["WTA_FIRSTSEENADJUSTMENT"], lit(0))
-    )
-
+    #Set the numerator (breaches) and denominator (all patients)
     df = df.with_column(
         "PER_NUMERATOR",
-        when(df["PER_VALUE"] <= 14, 0)
+        when(df["PER_VALUE"] <= 28, 0)
         .otherwise(1)
     )
 
@@ -116,7 +135,7 @@ df_base = session.table("CWT_BASE")
 cwt_pathway_fv = FeatureView(
    name="CWT_PERFORMANCE",  # name of feature view
    entities=[entity_record],  # entities
-   feature_df=performance_2ww(df_base),  # definition query
+   feature_df=performance_fds(df_base),  # definition query
    #timestamp_col="TS",  # timestamp column
    refresh_freq="30 days",  # refresh frequency
    desc="Table of performance metrics for CWT data",
