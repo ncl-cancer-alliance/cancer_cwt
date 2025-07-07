@@ -140,8 +140,4 @@ SELECT
 FROM "Data_Store_Waiting".CWTDS."CWT001Data" cwt
 
 --Left join to filter out outdated records
-LEFT JOIN DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_LATESTSUBMISSION ls
-ON cwt.SK = ls.SK
-
-WHERE ls.META_LATESTRECORD = 1
-
+QUALIFY row_number() OVER (PARTITION BY cwt.RECORDID ORDER BY cwt."UniqSubmissionID" DESC) = 1
