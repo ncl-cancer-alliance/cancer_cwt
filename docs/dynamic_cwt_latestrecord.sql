@@ -1,3 +1,4 @@
+--No longer used as integrated into the base
 CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_LATESTSUBMISSION (
     --Entry identifiers
     SK VARCHAR, --UUID for rows in the CWT0001 Source table
