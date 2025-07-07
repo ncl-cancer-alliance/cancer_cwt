@@ -63,3 +63,50 @@ def load_entity(feature_store, entity_name):
         raise e
 
     return entity
+
+def create_dynamic_features(transformation_func, params):
+    connection_params = {
+        "account": params["account"],
+        "user": params["user"],
+        "authenticator": params["authenticator"],
+        "role": params["role"],
+        "warehouse": params["warehouse"],
+        "database": params["session_database"],
+        "schema": params["session_schema"]
+    }
+
+    session = snowpark_session_create(
+        connection_params, params["query_tag"])
+    
+    #Load the base data
+    df_base = session.table(params["base_table"])
+
+    #Create the dynamic table
+    destination_full = ".".join([
+        params["destination_database"],
+        params["destination_schema"],
+        params["destination_table"],
+    ])
+    
+    if "fdt_lag" not in params.keys():
+        params["fdt_lag"] = "2 hours"
+
+    if "fdt_mode" not in params.keys():
+        params["fdt_mode"] = "overwrite"
+
+    if "fdt_refresh_mode" not in params.keys():
+        params["fdt_refresh_mode"] = "INCREMENTAL"
+
+    if "fdt_initialize" not in params.keys():
+        params["fdt_initialize"] = "ON_CREATE"
+
+    
+    transformation_func(df_base).create_or_replace_dynamic_table(
+        name=destination_full,
+        warehouse=params["warehouse"],
+        lag=params["fdt_lag"],
+        comment=params["fdt_comment"],
+        mode=params["fdt_mode"],
+        refresh_mode=params["fdt_refresh_mode"],
+        initialize=params["fdt_initialize"] 
+    )
