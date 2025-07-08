@@ -10,7 +10,7 @@ from snowflake.ml.feature_store import FeatureView
 #Utility script imports
 import utils.util_snowflake as us
 
-#Function to derive the 2ww performance figures
+#Function to derive the FDS performance figures
 def performance_fds(df):
 
     #Calculate the PER_VALUE first since it is needed in the filter for valid records
@@ -32,7 +32,7 @@ def performance_fds(df):
         coalesce(df["WTA_FIRSTSEENADJUSTMENT"], lit(0))
     )
 
-    #Filter out to only valid 2ww records
+    #Filter out to only valid FDS records
     df = df.where(
         (
             (in_([col("PATHWAY_FDPENDREASON")], ["01", "02", "04"])) |

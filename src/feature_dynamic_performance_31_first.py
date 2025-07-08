@@ -51,7 +51,7 @@ def performance_31day_first(df):
         lit("31 Day")
     )
 
-    #Calculate the 2ww value
+    #Calculate the 31 Day value
     df = df.with_column(
         "PER_VALUE",
         df["DATE_TREATMENTSTARTDATE"] - 
