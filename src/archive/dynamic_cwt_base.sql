@@ -1,0 +1,165 @@
+CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
+    --Entry identifiers
+    SK VARCHAR, --UUID for rows in the CWT0001 Source table
+    RECORD_ID VARCHAR, --UUID for the referral (Not unique)
+
+    --Organisation Fields
+    ORG_ACCOUNTABLEINVESTIGATING VARCHAR, --Investigating org for 6 Scernarios
+    ORG_CONSULTANTUPGRADE VARCHAR, --Investigating org for Upgrade pathway
+    ORG_FIRSTSEEN_TRUST VARCHAR,
+    ORG_FIRSTSEEN_SITE VARCHAR, --Org where patient is first seen post referral
+    ORG_FDPEND VARCHAR, --Org where the FD Pathway ends
+    ORG_PATIENTPATHWAYIDENTIFIERISSUER VARCHAR, --Org associated with the pathway ID
+    ORG_ACCOUNTABLETREATING VARCHAR, --Treating Organisation
+
+    --Breakdowns Fields
+    CWT_PRIMARYDIAGNOSISICD VARCHAR, --Diagnosis code
+    CWT_CANCERREFERALTYPE CHAR(2), --Referal Type
+
+    --GP Fields
+    PC_ICSREGISTRATION VARCHAR,
+    PC_PRACTICECODE CHAR(8), --GP Practice Code
+    
+    --Residence Fields
+    RES_ICSCODE CHAR(3), --ICS of Residence
+    RES_LACODE CHAR(9), --Local Authority of Residence
+    RES_LSOA CHAR(9), --LSOA of Residence
+    
+    --Pathway Identifiers
+    PATHWAY_PRIORITYTYPECODE NUMBER, --Identifier for pathway
+    PATHWAY_CANCERTREATMENTEVENTTYPE CHAR(2), --Identifier for pathway
+    PATHWAY_REFERRALTYPE CHAR(2), --Identifier for pathway
+    PATHWAY_SOURCEOFREFERRALFOROUTPATIENT CHAR(2), --Identifier for pathway
+    PATHWAY_CANCERTREATMENTMODALITY CHAR(2), --Identifier for pathway
+    PATHWAY_CANCERCARESETTINGTREATMENT CHAR(2), --Identifier for admitted care
+    PATHWAY_FDPENDREASON CHAR(2), --End reason used in FDP Logic
+    PATHWAY_FDPEXCLUSIONREASON CHAR(2), --Exclusion reason for FDP
+    PATHWAY_FDPOUTCOMEMETHOD CHAR(2),  --FDP Outcome Method
+    PATHWAY_FDPOUTCOMEPROFTYPE CHAR(3), --FDP Outcome Prof Type
+
+    --Date Fields
+    DATE_DECISIONTOREFERDATE DATE, --Unused?
+    DATE_CANCERREFERRALTOTREATMENTPERIODSTARTDATE DATE, --Date of referral
+    DATE_CONSULTANTUPGRADEDATE DATE, --Date for start for consultant pathway
+    DATE_DATEFIRSTSEEN DATE, --Date of first completed appointment post referral 
+    DATE_FDSPATHWAYENDDATE DATE, --Date where cancer is confirmed or ruled out
+    DATE_CANCERTREATMENTPERIODSTARTDATE DATE, --Date for 31 Clock Start
+    DATE_TRANSFERTOTREATMENTDATE DATE, --Date between Investigation and Treatment windows
+    DATE_TREATMENTSTARTDATE DATE, --Date for Treatment starts
+    
+    --Waiting Time Adjustment
+    WTA_FIRSTSEENADJUSTMENT NUMBER, --Adjustment for First Seen TTE
+    WTA_TREATMENTADJUSTMENT NUMBER, --Adjustment for Treatment TTE
+    WTA_TREATMENTREASON VARCHAR, --Reason for adjustment for Treatment TTE
+    
+    --Geo
+    GEO_GP BOOLEAN, --Flag for registered to a NCL GP
+    GEO_RESIDENCE BOOLEAN, --Flag for NCL residents
+    GEO_TRUST BOOLEAN, --Flag for interacting with a NCL Trust
+    GEO_TRUST_DATEFIRSTSEEN BOOLEAN, --Flag if the Date First Seen Organisation is a NCL Trust
+    GEO_TRUST_FDS BOOLEAN, --Flag if the FDS Organisation is a NCL Trust
+    GEO_TRUST_TREATMENTSTARTDATE BOOLEAN, --Flag if the Treatment Start Date Organisation is a NCL Trust
+
+    --Record Events
+    EVENT_DATEFIRSTSEEN BOOLEAN, --Flag if the record includes the 2WW Pathway
+    EVENT_CANCERTREATMENTPERIOD BOOLEAN, --Flag if the record includes the 31D Pathway
+    EVENT_FDS BOOLEAN, --Flag if the record includes the 28D Pathway
+    EVENT_TREATMENTSTARTDATE BOOLEAN, --Flag if the record includes the 62D Pathway
+
+    --Metadata
+    META_SUBMISSIONID NUMBER --Numeric ID for the upload batch in the source
+
+)
+COMMENT="Dynamic table to use as an univserial base for CWT data."
+TARGET_LAG = "2 hours"
+REFRESH_MODE = INCREMENTAL
+INITIALIZE = ON_CREATE
+WAREHOUSE = NCL_ANALYTICS_XS
+AS
+WITH org_par AS (
+    SELECT child."Organisation_Code" AS "ORG_SITE", par."Organisation_Code" AS "ORG_TRUST"
+    FROM "Dictionary"."dbo"."Organisation" child
+
+    LEFT JOIN "Dictionary"."dbo"."Organisation" par 
+    ON child."SK_OrganisationID_ParentOrg" = par."SK_OrganisationID"
+)
+
+SELECT
+    --Entry identifiers
+    cwt.SK,
+    cwt.RECORDID AS RECORD_ID,
+    --Organisation Fields
+    cwt.ACCOUNTABLEINVESTIGATINGPROVIDER AS ORG_ACCOUNTABLEINVESTIGATING,
+    cwt.ORGCONSUPGRADE AS ORG_CONSULTANTUPGRADE,
+    org_fs.ORG_TRUST AS ORG_FIRSTSEEN_TRUST,
+    cwt.ORGFIRSTSEEN AS ORG_FIRSTSEEN_SITE,
+    cwt.ORGFDPEND AS ORG_FDPEND,
+    --
+    cwt.ORGPPI AS ORG_PATIENTPATHWAYIDENTIFIERISSUER,
+    cwt.ORGTREATSTART AS ORG_ACCOUNTABLETREATING,
+    
+    --Breakdowns Fields
+    cwt.PRIMARYDIAGNOSISICD AS CWT_PRIMARYDIAGNOSISICD,
+    cwt.REFTYPE AS CWT_CANCERREFERALTYPE,
+    --GP Fields
+    cwt.ICS_OF_REGISTRATION AS PC_ICSREGISTRATION,
+    cwt.PDS_GPCODE AS PC_PRACTICECODE,
+    --Residence Fields
+    cwt.ICS_OF_RESIDENCE AS RES_ICSCODE,
+    cwt.LA_OF_RESIDENCE AS RES_LACODE,
+    cwt.LSOA_OF_RESIDENCE AS RES_LSOA,
+    --Pathway Identifiers
+    cwt.PRIORITYTYPECODE AS PATHWAY_PRIORITYTYPECODE,
+    cwt.CANCERTREATMENTEVENTTYPE AS PATHWAY_CANCERTREATMENTEVENTTYPE,
+    cwt.REFTYPE AS PATHWAY_REFERRALTYPE,
+    cwt.SOURCEOFREFERRALFOROUTPATIENT AS PATHWAY_SOURCEOFREFERRALFOROUTPATIENT,
+    cwt.CANCERTREATMENTMODALITY AS PATHWAY_CANCERTREATMENTMODALITY,
+    cwt.CANCERCARESETTINGTREATMENT AS PATHWAY_CANCERCARESETTINGTREATMENT,
+    cwt.FDPENDREASON AS PATHWAY_FDPENDREASON,
+    cwt.FDPEXCLUSIONREASON AS PATHWAY_FDPEXCLUSIONREASON,
+    cwt.FDPOUTCOMEMETHOD AS PATHWAY_FDPOUTCOMEMETHOD,
+    cwt.FDPOUTCOMEPROFTYPE AS PATHWAY_FDPOUTCOMEPROFTYPE,
+    --Date Fields
+    cwt.DECTOREFDATE AS DATE_DECSIONTOREFERDATE,
+    cwt.CRTPDATE AS DATE_CANCERREFERRALTOTREATMENTPERIODSTARTDATE, 
+    cwt.CONSULTANTUPGRADEDATE AS DATE_CONSULTANTUPGRADEDATE, 
+    cwt.DATEFIRSTSEEN AS DATE_DATEFIRSTSEEN,
+    cwt.CANCERFASTERDIAGNOSISPATHWAYENDDATE AS DATE_FDSPATHWAYENDDATE,
+    --cwt.MDTDATE AS DATE_MULTIDISCIPLINARYTEAMDISCUSSIONDATE,
+    cwt.CANCERTREATMENTPERIODSTARTDATE AS DATE_CANCERTREATMENTPERIODSTARTDATE,
+    cwt.TRANSFERTOTREATMENTDATE AS DATE_TRANSFERTOTREATMENTDATE,
+    cwt.TREATMENTSTARTDATECANCER AS DATE_TREATMENTSTARTDATE,
+    --Waiting Time Adjustments
+    cwt.WAITINGTIMEADJUSTMENTFIRSTSEEN AS WTA_FIRSTSEENADJUSTMENT,
+    cwt.WAITINGTIMEADJUSTMENTTREATMENT AS WTA_TREATMENTADJUSTMENT,
+    cwt.WAITINGTIMEADJUSTMENTREASONTREATMENT AS WTA_TREATMENTREASON,
+    --Geo
+    cwt."dmIcbRegistrationSubmitted" = 'QMJ' AS GEO_GP,
+    cwt."dmIcbResidenceSubmitted" = 'QMJ' AS GEO_RESIDENCE,
+    COALESCE(
+        cwt."Organisation_Code_CCG_of_DFS" = '93C' OR
+        cwt."Organisation_Code_CCG_of_FDS" = '93C' OR
+        cwt."Organisation_Code_CCG_of_TSD" = '93C',
+        FALSE
+    ) AS GEO_TRUST,
+    cwt."Organisation_Code_CCG_of_DFS" = '93C' AS GEO_TRUST_DATEFIRSTSEEN,
+    cwt."Organisation_Code_CCG_of_FDS" = '93C' AS GEO_TRUST_FDS,
+    cwt."Organisation_Code_CCG_of_TSD" = '93C' AS GEO_TRUST_TREATMENTSTARTDATE,
+    --Event
+    cwt.DATEFIRSTSEEN IS NOT NULL AS EVENT_DATEFIRSTSEEN,
+    cwt.CANCERTREATMENTPERIODSTARTDATE IS NOT NULL AS EVENT_CANCERTREATMENTPERIOD,
+    cwt.CANCERFASTERDIAGNOSISPATHWAYENDDATE IS NOT NULL AS EVENT_FDS,
+    cwt.TREATMENTSTARTDATECANCER IS NOT NULL AS EVENT_TREATMENTSTARTDATE,
+    --Metadata
+    cwt."UniqSubmissionID" AS META_SUBMISSIONID
+
+FROM "Data_Store_Waiting".CWTDS."CWT001Data" cwt
+
+LEFT JOIN org_par org_fs
+ON org_fs.ORG_SITE = cwt.ORGFIRSTSEEN
+
+LEFT JOIN org_par org_fdp
+ON org_fdp.ORG_SITE = cwt.ORGFDPEND
+
+--Qualify clause to filter out outdated records
+QUALIFY row_number() OVER (PARTITION BY cwt.RECORDID ORDER BY cwt."UniqSubmissionID" DESC) = 1
