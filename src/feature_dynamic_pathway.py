@@ -23,25 +23,19 @@ def determine_pathway(df):
         (col("PATHWAY_PRIORITYTYPECODE") == 3) &
         (col("PATHWAY_REFERRALTYPE") != 16) &
         (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") != 17) &
-        is_null(col("DATE_CONSULTANTUPGRADEDATE")) &
-        #Additional field
-        not_(is_null(col("ORG_FIRSTSEEN")))
+        is_null(col("DATE_CONSULTANTUPGRADEDATE"))
     )
 
     pathway_breastsymp = (
         (col("PATHWAY_PRIORITYTYPECODE") == 3) &
         (col("PATHWAY_REFERRALTYPE") == 16) &
         (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") != 17) &
-        is_null(col("DATE_CONSULTANTUPGRADEDATE")) &
-        #Additional field
-        not_(is_null(col("ORG_FIRSTSEEN")))
+        is_null(col("DATE_CONSULTANTUPGRADEDATE"))
     )
 
     pathway_screening = (
         (col("PATHWAY_PRIORITYTYPECODE") == 2) &
-        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") == 17) &
-        #Additional field
-        not_(is_null(col("ORG_FIRSTSEEN")))
+        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") == 17)
     )
 
     pathway_upgrade = (
