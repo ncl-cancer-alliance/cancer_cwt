@@ -51,9 +51,14 @@ def performance_31day_sub(df):
     )
 
     #Set the relevant organisation
+    org_col = "ORG_ACCOUNTABLETREATING"
     df = df.with_column(
-        "PER_ORG",
-        df["ORG_ACCOUNTABLETREATING"]
+        "PER_ORG_SITE",
+        df[org_col + "_SITE"]
+    )
+    df = df.with_column(
+        "PER_ORG_TRUST",
+        df[org_col + "_TRUST"]
     )
 
     df = df.with_column(
@@ -88,7 +93,7 @@ def performance_31day_sub(df):
 
     #Remove unused columns
     df = df[["RECORD_ID", "PER_DATE_YEAR", "PER_DATE_MONTH", 
-            "PER_ORG", "PER_ORG_NCL", "PER_METRIC", 
+            "PER_ORG_TRUST", "PER_ORG_SITE", "PER_ORG_NCL", "PER_METRIC", 
             "PER_VALUE", "PER_NUMERATOR", "PER_DENOMINATOR",
             "D31_BREAKDOWN"]]
 

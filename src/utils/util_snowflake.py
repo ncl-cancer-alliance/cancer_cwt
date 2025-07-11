@@ -169,7 +169,7 @@ def create_dynamic_features(transformation_func, params):
         params["fdt_mode"] = "overwrite"
 
     if "fdt_refresh_mode" not in params.keys():
-        params["fdt_refresh_mode"] = "INCREMENTAL"
+        params["fdt_refresh_mode"] = "FULL"
 
     if "fdt_initialize" not in params.keys():
         params["fdt_initialize"] = "ON_CREATE"
