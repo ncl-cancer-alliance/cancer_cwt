@@ -43,7 +43,9 @@ def performance_fds(df):
             )
         ) &
         not_(is_null(col("DATE_CANCERREFERRALTOTREATMENTPERIODSTARTDATE"))) &
-        not_(is_null(col("DATE_FDSPATHWAYENDDATE")))        
+        not_(is_null(col("DATE_FDSPATHWAYENDDATE"))) &
+        #Additional requirement
+        not_(is_null(col("ORG_FIRSTSEEN")))   
     )
 
     #Set the Date fields
