@@ -4,12 +4,16 @@ CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
     RECORD_ID VARCHAR, --UUID for the referral (Not unique)
 
     --Organisation Fields
-    ORG_ACCOUNTABLEINVESTIGATING VARCHAR, --Investigating org for 6 Scernarios
-    ORG_CONSULTANTUPGRADE VARCHAR, --Investigating org for Upgrade pathway
-    ORG_FIRSTSEEN VARCHAR, --Org where patient is first seen post referral
-    ORG_FDPEND VARCHAR, --Org where the FD Pathway ends
-    ORG_PATIENTPATHWAYIDENTIFIERISSUER VARCHAR, --Org associated with the pathway ID
-    ORG_ACCOUNTABLETREATING VARCHAR, --Treating Organisation
+    ORG_ACCOUNTABLEINVESTIGATING_TRUST VARCHAR, --Investigating org for 6 Scernarios
+    ORG_CONSULTANTUPGRADE_TRUST VARCHAR,
+    ORG_CONSULTANTUPGRADE_SITE VARCHAR, --Investigating org for Upgrade pathway
+    ORG_FIRSTSEEN_TRUST VARCHAR,
+    ORG_FIRSTSEEN_SITE VARCHAR, --Org where patient is first seen post referral
+    ORG_FDPEND_TRUST VARCHAR,
+    ORG_FDPEND_SITE VARCHAR, --Org where the FD Pathway ends
+    ORG_PATIENTPATHWAYIDENTIFIERISSUER_TRUST VARCHAR, --Org associated with the pathway ID
+    ORG_ACCOUNTABLETREATING_TRUST VARCHAR,
+    ORG_ACCOUNTABLETREATING_SITE VARCHAR, --Treating Organisation
 
     --Breakdowns Fields
     CWT_PRIMARYDIAGNOSISICD VARCHAR, --Diagnosis code
@@ -58,6 +62,8 @@ CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
     GEO_TRUST_DATEFIRSTSEEN BOOLEAN, --Flag if the Date First Seen Organisation is a NCL Trust
     GEO_TRUST_FDS BOOLEAN, --Flag if the FDS Organisation is a NCL Trust
     GEO_TRUST_TREATMENTSTARTDATE BOOLEAN, --Flag if the Treatment Start Date Organisation is a NCL Trust
+    GEO_TRUST_ACCOUNTABLEINVESTIGATING BOOLEAN, --Flag if the Accountable Investigating Organisation is a NCL trust
+    GEO_TRUST_CONSULTANTUPGRADE BOOLEAN, --Flag if the Consultant Upgrade Organisation is a NCL trust
 
     --Record Events
     EVENT_DATEFIRSTSEEN BOOLEAN, --Flag if the record includes the 2WW Pathway
@@ -71,21 +77,46 @@ CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
 )
 COMMENT="Dynamic table to use as an univserial base for CWT data."
 TARGET_LAG = "2 hours"
-REFRESH_MODE = INCREMENTAL
+REFRESH_MODE = FULL
 INITIALIZE = ON_CREATE
 WAREHOUSE = NCL_ANALYTICS_XS
 AS
+WITH org_par AS (
+    SELECT 
+        child."Organisation_Code" AS "ORG_SITE", 
+        CASE 
+            WHEN child."SK_OrganisationTypeID" = 41
+            THEN child."Organisation_Code"
+            ELSE par."Organisation_Code" 
+        END AS "ORG_TRUST"
+    FROM "Dictionary"."dbo"."Organisation" child
+
+    LEFT JOIN "Dictionary"."dbo"."Organisation" par 
+    ON child."SK_OrganisationID_ParentOrg" = par."SK_OrganisationID"
+)
+
 SELECT
     --Entry identifiers
     cwt.SK,
     cwt.RECORDID AS RECORD_ID,
     --Organisation Fields
-    cwt.ACCOUNTABLEINVESTIGATINGPROVIDER AS ORG_ACCOUNTABLEINVESTIGATING,
-    cwt.ORGCONSUPGRADE AS ORG_CONSULTANTUPGRADE,
-    cwt.ORGFIRSTSEEN AS ORG_FIRSTSEEN,
-    cwt.ORGFDPEND AS ORG_FDPEND,
-    cwt.ORGPPI AS ORG_PATIENTPATHWAYIDENTIFIERISSUER,
-    cwt.ORGTREATSTART AS ORG_ACCOUNTABLETREATING,
+    cwt.ACCOUNTABLEINVESTIGATINGPROVIDER AS ORG_ACCOUNTABLEINVESTIGATING_TRUST,
+
+    org_cu.ORG_TRUST AS ORG_CONSULTANTUPGRADE_TRUST,
+    cwt.ORGCONSUPGRADE AS ORG_CONSULTANTUPGRADE_SITE,
+
+    org_fs.ORG_TRUST AS ORG_FIRSTSEEN_TRUST,
+    cwt.ORGFIRSTSEEN AS ORG_FIRSTSEEN_SITE,
+
+    org_fdp.ORG_TRUST AS ORG_FDPEND_TRUST,
+    cwt.ORGFDPEND AS ORG_FDPEND_SITE,
+    
+    COALESCE(org_pi.ORG_TRUST, cwt.ORGPPI)  
+    AS ORG_PATIENTPATHWAYIDENTIFIERISSUER_TRUST,
+
+    org_at.ORG_TRUST AS ORG_ACCOUNTABLETREATING_TRUST,
+    cwt.ORGTREATSTART AS ORG_ACCOUNTABLETREATING_SITE,
+    
     --Breakdowns Fields
     cwt.PRIMARYDIAGNOSISICD AS CWT_PRIMARYDIAGNOSISICD,
     cwt.REFTYPE AS CWT_CANCERREFERALTYPE,
@@ -133,6 +164,8 @@ SELECT
     cwt."Organisation_Code_CCG_of_DFS" = '93C' AS GEO_TRUST_DATEFIRSTSEEN,
     cwt."Organisation_Code_CCG_of_FDS" = '93C' AS GEO_TRUST_FDS,
     cwt."Organisation_Code_CCG_of_TSD" = '93C' AS GEO_TRUST_TREATMENTSTARTDATE,
+    cwt.ACCOUNTABLEINVESTIGATINGPROVIDER IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_ACCOUNTABLEINVESTIGATING,
+    org_cu.ORG_TRUST IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_CONSULTANTUPGRADE,
     --Event
     cwt.DATEFIRSTSEEN IS NOT NULL AS EVENT_DATEFIRSTSEEN,
     cwt.CANCERTREATMENTPERIODSTARTDATE IS NOT NULL AS EVENT_CANCERTREATMENTPERIOD,
@@ -143,5 +176,20 @@ SELECT
 
 FROM "Data_Store_Waiting".CWTDS."CWT001Data" cwt
 
---Left join to filter out outdated records
+LEFT JOIN org_par org_cu
+ON org_cu.ORG_SITE = cwt.ORGCONSUPGRADE
+
+LEFT JOIN org_par org_fs
+ON org_fs.ORG_SITE = cwt.ORGFIRSTSEEN
+
+LEFT JOIN org_par org_fdp
+ON org_fdp.ORG_SITE = cwt.ORGFDPEND
+
+LEFT JOIN org_par org_pi
+ON org_pi.ORG_SITE = cwt.ORGPPI
+
+LEFT JOIN org_par org_at
+ON org_at.ORG_SITE = cwt.ORGTREATSTART
+
+--Qualify clause to filter out outdated records
 QUALIFY row_number() OVER (PARTITION BY cwt.RECORDID ORDER BY cwt."UniqSubmissionID" DESC) = 1
