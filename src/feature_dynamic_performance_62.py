@@ -12,6 +12,12 @@ import utils.util_snowflake as us
 
 #Function to derive the 31 day performance figures (First Treatment)
 def performance_62day(df):
+
+    #Define Upgrade pathway as some logic is dependent on it
+    pathway_upgrade = (
+        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") != 17) &
+        not_(is_null(col("DATE_CONSULTANTUPGRADEDATE")))
+    )
      
     #Filter out to only valid 62 Day records
     df = df.where(
@@ -21,7 +27,8 @@ def performance_62day(df):
         not_(is_null(col("DATE_CANCERTREATMENTPERIODSTARTDATE"))) &
         not_(is_null(col("DATE_TREATMENTSTARTDATE"))) &
         #Additional requirement
-        not_(is_null(col("ORG_FIRSTSEEN_TRUST")))
+        #(For all USC, Screening activity; First Seen Org is required)
+        not_(is_null(col("ORG_FIRSTSEEN_TRUST")) | pathway_upgrade)
     )
 
     #Set the Date fields
@@ -180,11 +187,6 @@ def performance_62day(df):
 
     #6 Scenarios#############################################
 
-    pathway_upgrade = (
-        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") != 17) &
-        not_(is_null(col("DATE_CONSULTANTUPGRADEDATE")))
-    )
-
     #Calculate 38 Day and 24 Day Performance
     df_6s = df_6s.with_column(
         "PER_38D",
@@ -217,6 +219,8 @@ def performance_62day(df):
     )
 
     #Determine Scenario
+
+    #Boolean shorthand to determine breaches
     d62 = (col("PER_VALUE") <= 62)
     d38 = (col("PER_38D") <= 38)
     d24 = (col("PER_24D") <= 24)
@@ -224,6 +228,7 @@ def performance_62day(df):
     nd38 = not_(d38)
     nd24 = not_(d24)
 
+    #Dictionary containing patient allocation based on the organisation
     dict_6s = {
         "diag":{
             1:{"num": 0.5, "den":0.5},
@@ -243,6 +248,7 @@ def performance_62day(df):
         }
     }
 
+    #Determine which scenario
     df_6s = df_6s.with_column(
         "D62_6S_SCENARIO",
         when( d62  & d38  & d24,  1)
@@ -354,8 +360,8 @@ def performance_62day(df):
 
     df_6s_diag_d38 = df_6s_diag_d38.with_column(
         "PER_NUMERATOR",
-        when(d38, 1)
-        .otherwise(0)
+        when(d38, 0)
+        .otherwise(1)
     )
 
     df_6s_diag_d38 = df_6s_diag_d38.with_column(
@@ -376,8 +382,8 @@ def performance_62day(df):
 
     df_6s_treat_d24 = df_6s_treat_d24.with_column(
         "PER_NUMERATOR",
-        when(d24, 1)
-        .otherwise(0)
+        when(d24, 0)
+        .otherwise(1)
     )
 
     df_6s_treat_d24 = df_6s_treat_d24.with_column(
@@ -388,8 +394,6 @@ def performance_62day(df):
     df_6s = df_6s_diag.union_all(df_6s_treat)
 
     df_6s_extra = df_6s_diag_d38.union_all(df_6s_treat_d24)
-
-
 
     #Remove unused columns
     d62_cols = ["RECORD_ID", "PER_DATE_YEAR", "PER_DATE_MONTH", 
@@ -435,9 +439,9 @@ feature_dynamic_params = {
 
     "destination_database": getenv("DATABASE"),
     "destination_schema": getenv("SCHEMA"),
-    "destination_table": "CWT_PERFORMANCE_62",
+    "destination_table": "CWT_PERFORMANCE_62DAY",
     
-    "fdt_comment": "Calculates 62 Day Performance (First Treatment)"
+    "fdt_comment": "Calculates 62 Day Performance"
 }
 
 #Create a Snowflake session
@@ -456,6 +460,5 @@ session = us.snowpark_session_create(
 
 #Load the base data
 df_base = session.table("CWT_BASE")
-#performance_62day(df_base)
 
 us.create_dynamic_features(transformation_func=performance_62day, params=feature_dynamic_params)
