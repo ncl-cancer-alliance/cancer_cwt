@@ -161,9 +161,9 @@ SELECT
         cwt."Organisation_Code_CCG_of_TSD" = '93C',
         FALSE
     ) AS GEO_TRUST,
-    cwt."Organisation_Code_CCG_of_DFS" = '93C' AS GEO_TRUST_DATEFIRSTSEEN,
-    cwt."Organisation_Code_CCG_of_FDS" = '93C' AS GEO_TRUST_FDS,
-    cwt."Organisation_Code_CCG_of_TSD" = '93C' AS GEO_TRUST_TREATMENTSTARTDATE,
+    org_fs.ORG_TRUST IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_DATEFIRSTSEEN,
+    org_fdp.ORG_TRUST IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_FDS,
+    org_at.ORG_TRUST IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_TREATMENTSTARTDATE,
     cwt.ACCOUNTABLEINVESTIGATINGPROVIDER IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_ACCOUNTABLEINVESTIGATING,
     org_cu.ORG_TRUST IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_CONSULTANTUPGRADE,
     --Event
