@@ -28,7 +28,7 @@ def performance_62day(df):
         not_(is_null(col("DATE_TREATMENTSTARTDATE"))) &
         #Additional requirement
         #(For all USC, Screening activity; First Seen Org is required)
-        not_(is_null(col("ORG_FIRSTSEEN_TRUST")) | pathway_upgrade)
+        (not_(is_null(col("ORG_FIRSTSEEN_TRUST"))) | pathway_upgrade)
     )
 
     #Set the Date fields
@@ -54,10 +54,28 @@ def performance_62day(df):
     #Calculate the 62 Day value
     df = df.with_column(
         "PER_VALUE",
-        df["DATE_TREATMENTSTARTDATE"] - 
-        df["DATE_CANCERREFERRALTOTREATMENTPERIODSTARTDATE"] -
-        coalesce(df["WTA_FIRSTSEENADJUSTMENT"], lit(0)) -
-        coalesce(df["WTA_TREATMENTADJUSTMENT"], lit(0))
+        #If USC, Breast Symptomatic, Screening
+        when(
+            not_(pathway_upgrade),
+            df["DATE_TREATMENTSTARTDATE"] - 
+            df["DATE_CANCERREFERRALTOTREATMENTPERIODSTARTDATE"] -
+            coalesce(df["WTA_FIRSTSEENADJUSTMENT"], lit(0)) -
+            coalesce(df["WTA_TREATMENTADJUSTMENT"], lit(0))
+        )
+        #If Upgrade then calculation depends if the upgrade date is before or 
+        # on the date first seen
+        .when(
+            df["DATE_CONSULTANTUPGRADEDATE"] <= df["DATE_DATEFIRSTSEEN"],
+            df["DATE_TREATMENTSTARTDATE"] - 
+            df["DATE_CONSULTANTUPGRADEDATE"] -
+            coalesce(df["WTA_FIRSTSEENADJUSTMENT"], lit(0))  -
+            coalesce(df["WTA_TREATMENTADJUSTMENT"], lit(0))
+        )
+        .otherwise(
+            df["DATE_TREATMENTSTARTDATE"] - 
+            df["DATE_CONSULTANTUPGRADEDATE"] -
+            coalesce(df["WTA_TREATMENTADJUSTMENT"], lit(0))
+        )
     )
 
     df = df.with_column(
@@ -417,6 +435,7 @@ def performance_62day(df):
     #Move solo, 5050, 6s allocation to their own functions
 
     print("Sample of output:")
+
     df_out.show()
 
     return df_out
