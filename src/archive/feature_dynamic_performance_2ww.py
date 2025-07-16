@@ -33,14 +33,14 @@ def performance_2ww(df):
     )
 
     #Set the relevant organisation
-    org_col = "ORG_FIRSTSEEN"
-    df = df.with_column(
-        "PER_ORG_SITE",
-        df[org_col + "_SITE"]
-    )
     df = df.with_column(
         "PER_ORG_TRUST",
-        df[org_col + "_TRUST"]
+        df["ORG_FIRSTSEEN_TRUST"]
+    ) 
+
+    df = df.with_column(
+        "PER_ORG_SITE",
+        df["ORG_FIRSTSEEN_SITE"]
     )
 
     df = df.with_column(

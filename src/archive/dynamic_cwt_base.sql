@@ -62,8 +62,6 @@ CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
     GEO_TRUST_DATEFIRSTSEEN BOOLEAN, --Flag if the Date First Seen Organisation is a NCL Trust
     GEO_TRUST_FDS BOOLEAN, --Flag if the FDS Organisation is a NCL Trust
     GEO_TRUST_TREATMENTSTARTDATE BOOLEAN, --Flag if the Treatment Start Date Organisation is a NCL Trust
-    GEO_TRUST_ACCOUNTABLEINVESTIGATING BOOLEAN, --Flag if the Accountable Investigating Organisation is a NCL trust
-    GEO_TRUST_CONSULTANTUPGRADE BOOLEAN, --Flag if the Consultant Upgrade Organisation is a NCL trust
 
     --Record Events
     EVENT_DATEFIRSTSEEN BOOLEAN, --Flag if the record includes the 2WW Pathway
@@ -161,11 +159,9 @@ SELECT
         cwt."Organisation_Code_CCG_of_TSD" = '93C',
         FALSE
     ) AS GEO_TRUST,
-    org_fs.ORG_TRUST IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_DATEFIRSTSEEN,
-    org_fdp.ORG_TRUST IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_FDS,
-    org_at.ORG_TRUST IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_TREATMENTSTARTDATE,
-    cwt.ACCOUNTABLEINVESTIGATINGPROVIDER IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_ACCOUNTABLEINVESTIGATING,
-    org_cu.ORG_TRUST IN ('RAL', 'RAN', 'RAP', 'RKE', 'RRV', 'RP4', 'RP6') AS GEO_TRUST_CONSULTANTUPGRADE,
+    cwt."Organisation_Code_CCG_of_DFS" = '93C' AS GEO_TRUST_DATEFIRSTSEEN,
+    cwt."Organisation_Code_CCG_of_FDS" = '93C' AS GEO_TRUST_FDS,
+    cwt."Organisation_Code_CCG_of_TSD" = '93C' AS GEO_TRUST_TREATMENTSTARTDATE,
     --Event
     cwt.DATEFIRSTSEEN IS NOT NULL AS EVENT_DATEFIRSTSEEN,
     cwt.CANCERTREATMENTPERIODSTARTDATE IS NOT NULL AS EVENT_CANCERTREATMENTPERIOD,

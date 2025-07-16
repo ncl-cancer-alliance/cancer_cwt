@@ -10,7 +10,7 @@ from snowflake.ml.feature_store import FeatureView
 #Utility script imports
 import utils.util_snowflake as us
 
-#Function to derive the 2ww performance figures
+#Function to derive the FDS performance figures
 def performance_fds(df):
 
     #Calculate the PER_VALUE first since it is needed in the filter for valid records
@@ -32,7 +32,7 @@ def performance_fds(df):
         coalesce(df["WTA_FIRSTSEENADJUSTMENT"], lit(0))
     )
 
-    #Filter out to only valid 2ww records
+    #Filter out to only valid FDS records
     df = df.where(
         (
             (in_([col("PATHWAY_FDPENDREASON")], ["01", "02", "04"])) |
@@ -43,7 +43,7 @@ def performance_fds(df):
             )
         ) &
         not_(is_null(col("DATE_CANCERREFERRALTOTREATMENTPERIODSTARTDATE"))) &
-        not_(is_null(col("DATE_FDSPATHWAYENDDATE")))        
+        not_(is_null(col("DATE_FDSPATHWAYENDDATE"))) 
     )
 
     #Set the Date fields
@@ -59,9 +59,14 @@ def performance_fds(df):
     )
 
     #Set the relevant organisation
+    org_col = "ORG_FDPEND"
     df = df.with_column(
-        "PER_ORG",
-        df["ORG_FDPEND"]
+        "PER_ORG_SITE",
+        df[org_col + "_SITE"]
+    )
+    df = df.with_column(
+        "PER_ORG_TRUST",
+        df[org_col + "_TRUST"]
     )
 
     df = df.with_column(
@@ -89,7 +94,7 @@ def performance_fds(df):
 
     #Remove unused columns
     df = df[["RECORD_ID", "PER_DATE_YEAR", "PER_DATE_MONTH", 
-            "PER_ORG", "PER_ORG_NCL", "PER_METRIC", 
+            "PER_ORG_TRUST", "PER_ORG_SITE", "PER_ORG_NCL", "PER_METRIC", 
             "PER_VALUE", "PER_NUMERATOR", "PER_DENOMINATOR"]]
 
     print("Sample of output:")

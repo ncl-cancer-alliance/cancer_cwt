@@ -1,4 +1,7 @@
+import pandas as pd
+
 from snowflake.snowpark.session import Session
+from snowflake import connector as sfc
 from snowflake.ml.feature_store import FeatureStore, CreationMode
 
 def snowpark_session_create(connection_params, query_tag=False):
@@ -22,6 +25,77 @@ def snowpark_session_create(connection_params, query_tag=False):
         session.query_tag = query_tag
 
     return session
+
+def snowflake_connection_create(connection_params, query_tag=False):
+    """
+    Create a Snowflake connection using the provided configuration.
+    connection_params: Dictionary containing connection parameters:
+        - account: Snowflake account name
+        - user: Snowflake username
+        - authenticator: Snowflake authenticator (e.g., 'externalbrowser', 'snowflake')
+        - warehouse: Snowflake warehouse
+        - role: Snowflake role
+        - database: Snowflake database
+    query_tag: Tag for logging and monitoring purposes
+    Returns:
+        - session: Snowflake connection object
+    """
+    
+    session_parameters = {}
+    if query_tag:
+        session_parameters["QUERY_TAG"] = query_tag
+
+    ctx = sfc.connect(
+    account="ATKJNCU-NCL",
+    user= "JAKE.KEALEY@NHS.NET",
+    authenticator= "externalbrowser",
+    role= "NCL-USERGROUP-STAFF-SNOWFLAKE-BI-ANALYST",
+    warehouse= "NCL_ANALYTICS_XS",
+    database= "DATA_LAB_NCL_TRAINING_TEMP",
+    schema= "CANCER_CWT",
+    session_parameters = session_parameters
+    )
+
+    return ctx
+
+def pull_data_from_query(query, 
+                         connection=False, connection_params={},
+                         query_tag=False):
+    """
+    Runs a SELECT query and returns the result as a pandas dataframe.
+    query: String containing the SELECT query
+    
+    EITHER PASS CONNECTION_PARAMS OR A SNOWFLAKE CONNECTION OBJECT. 
+    IF BOTH ARE PASSED THIS WILL USE THE CONNECTION BY DEFAULT.
+    connection: Connection object from snowflake.connector.connect()
+    connection_params: Dictionary containing connection parameters:
+        - account: Snowflake account name
+        - user: Snowflake username
+        - authenticator: Snowflake authenticator (e.g., 'externalbrowser', 'snowflake')
+        - warehouse: Snowflake warehouse
+        - role: Snowflake role
+        (Optional)
+        - database: Snowflake database
+        - schema: Snowflake schema
+        query_tag: Tag for logging and monitoring purposes (This is only used with connection_params)
+
+    Returns:
+        - df: Pandas dataframe containing the query results
+    """
+
+    #Use passed connection method
+    if connection == False:
+        ctx = snowflake_connection_create(connection_params, query_tag)
+    else:
+        ctx = connection
+
+    #Execute the query
+    cur = ctx.cursor()
+    cur.execute(query)
+
+    #Return the result
+    return cur.fetch_pandas_all()
+
 
 def load_feature_store(session, database, name, warehouse="NCL_ANALYTICS_XS"):
     
@@ -95,7 +169,7 @@ def create_dynamic_features(transformation_func, params):
         params["fdt_mode"] = "overwrite"
 
     if "fdt_refresh_mode" not in params.keys():
-        params["fdt_refresh_mode"] = "INCREMENTAL"
+        params["fdt_refresh_mode"] = "FULL"
 
     if "fdt_initialize" not in params.keys():
         params["fdt_initialize"] = "ON_CREATE"
