@@ -176,18 +176,20 @@ SELECT
 
 FROM "Data_Store_Waiting".CWTDS."CWT001Data" cwt
 
+--Organisation Site and Trust Mapping
+--Consultant Upgrades
 LEFT JOIN org_par org_cu
 ON org_cu.ORG_SITE = cwt.ORGCONSUPGRADE
-
+--First Seen
 LEFT JOIN org_par org_fs
 ON org_fs.ORG_SITE = cwt.ORGFIRSTSEEN
-
+--Faster Diagnosis Standard
 LEFT JOIN org_par org_fdp
 ON org_fdp.ORG_SITE = cwt.ORGFDPEND
-
+--Pathway Identifier
 LEFT JOIN org_par org_pi
 ON org_pi.ORG_SITE = cwt.ORGPPI
-
+--Accountable Treating
 LEFT JOIN org_par org_at
 ON org_at.ORG_SITE = cwt.ORGTREATSTART
 
