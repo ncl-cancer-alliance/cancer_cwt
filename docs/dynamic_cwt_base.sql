@@ -238,5 +238,8 @@ LEFT JOIN DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_REFERENCE_DATA ref_mod
 ON CAST(cwt.CANCERTREATMENTMODALITY AS INT) = ref_mod.CODE
 AND ref_mod.REFERENCE_CODE = 20
 
---Qualify clause to filter out outdated records
-QUALIFY row_number() OVER (PARTITION BY cwt.RECORDID ORDER BY cwt."UniqSubmissionID" DESC) = 1
+--Clause to remove inactive records
+WHERE EXISTS (
+    SELECT NULL 
+    FROM "Data_Store_Waiting".CWTDS."ActiveSystemId" asi 
+    WHERE asi."dmicSystemId" = cwt."dmicSystemId")
