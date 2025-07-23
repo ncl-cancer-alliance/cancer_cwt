@@ -16,8 +16,19 @@ CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
     ORG_ACCOUNTABLETREATING_SITE VARCHAR, --Treating Organisation
 
     --Breakdowns Fields
-    CWT_PRIMARYDIAGNOSISICD VARCHAR, --Diagnosis code
-    CWT_CANCERREFERALTYPE CHAR(2), --Referal Type
+    ---Primary Diagnosis---
+    CWT_PRIMARYDIAGNOSIS_CODE VARCHAR, --Diagnosis code
+    CWT_PRIMARYDIAGNOSIS_DESC VARCHAR, --Diagnosis description
+    CWT_PRIMARYDIAGNOSIS_GROUPING VARCHAR, --Grouping
+    CWT_PRIMARYDIAGNOSIS_COSD_STAGEABLE BOOLEAN, --COSD
+    CWT_PRIMARYDIAGNOSIS_RCRD_STAGEABLE BOOLEAN, --RCRD
+
+    ---Referral Type---
+    CWT_CANCERREFERALTYPE_CODE CHAR(2), --Referral Type Code
+    CWT_CANCERREFERALTYPE_DESC VARCHAR, --Referral Type Description
+
+    ---Modality---
+    CWT_MODALITY_DESC VARCHAR, --Modality Description
 
     --GP Fields
     PC_ICSREGISTRATION VARCHAR,
@@ -118,8 +129,26 @@ SELECT
     cwt.ORGTREATSTART AS ORG_ACCOUNTABLETREATING_SITE,
     
     --Breakdowns Fields
-    cwt.PRIMARYDIAGNOSISICD AS CWT_PRIMARYDIAGNOSISICD,
-    cwt.REFTYPE AS CWT_CANCERREFERALTYPE,
+    ---Primary Diagnosis---
+    cwt.PRIMARYDIAGNOSISICD AS CWT_PRIMARYDIAGNOSIS_CODE,
+    ref_pd.FULL_DESCRIPTION AS CWT_PRIMARYDIAGNOSIS_DESC, 
+    ref_pd.GROUPING AS CWT_PRIMARYDIAGNOSIS_GROUPING,
+    CASE ref_pd.COSD_STAGEABLE 
+        WHEN 'Stageable' THEN TRUE
+        ELSE FALSE
+    END AS CWT_PRIMARYDIAGNOSIS_COSD_STAGEABLE,
+    CASE ref_pd.RCRD_STAGEABLE 
+        WHEN 'Stageable' THEN TRUE
+        ELSE FALSE
+    END AS CWT_PRIMARYDIAGNOSIS_RCRD_STAGEABLE,
+    
+    ---Cancer Referral Type---
+    cwt.REFTYPE AS CWT_CANCERREFERALTYPE_CODE,
+    ref_rt.FULL_DESCRIPTION AS CWT_CANCERREFERALTYPE_DESC,
+
+    ---Modality---
+    ref_mod.FULL_DESCRIPTION AS CWT_MODALITY_DESC,
+
     --GP Fields
     cwt.ICS_OF_REGISTRATION AS PC_ICSREGISTRATION,
     cwt.PDS_GPCODE AS PC_PRACTICECODE,
@@ -176,20 +205,41 @@ SELECT
 
 FROM "Data_Store_Waiting".CWTDS."CWT001Data" cwt
 
+--Organisation Site and Trust Mapping
+---Consultant Upgrades---
 LEFT JOIN org_par org_cu
 ON org_cu.ORG_SITE = cwt.ORGCONSUPGRADE
-
+---First Seen---
 LEFT JOIN org_par org_fs
 ON org_fs.ORG_SITE = cwt.ORGFIRSTSEEN
-
+---Faster Diagnosis Standard---
 LEFT JOIN org_par org_fdp
 ON org_fdp.ORG_SITE = cwt.ORGFDPEND
-
+---Pathway Identifier---
 LEFT JOIN org_par org_pi
 ON org_pi.ORG_SITE = cwt.ORGPPI
-
+---Accountable Treating---
 LEFT JOIN org_par org_at
 ON org_at.ORG_SITE = cwt.ORGTREATSTART
 
---Qualify clause to filter out outdated records
-QUALIFY row_number() OVER (PARTITION BY cwt.RECORDID ORDER BY cwt."UniqSubmissionID" DESC) = 1
+--Reference Information Joins
+---Primary Diagnosis---
+LEFT JOIN DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_REFERENCE_DATA ref_pd
+ON cwt.PRIMARYDIAGNOSISICD = ref_pd.CODE
+AND ref_pd.REFERENCE_CODE = 1
+
+---Cancer Referral Type---
+LEFT JOIN DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_REFERENCE_DATA ref_rt
+ON CAST(cwt.REFTYPE AS INT) = ref_rt.CODE
+AND ref_rt.REFERENCE_CODE = 4
+
+---Modality---
+LEFT JOIN DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_REFERENCE_DATA ref_mod
+ON CAST(cwt.CANCERTREATMENTMODALITY AS INT) = ref_mod.CODE
+AND ref_mod.REFERENCE_CODE = 20
+
+--Clause to remove inactive records
+WHERE EXISTS (
+    SELECT NULL 
+    FROM "Data_Store_Waiting".CWTDS."ActiveSystemId" asi 
+    WHERE asi."dmicSystemId" = cwt."dmicSystemId")
