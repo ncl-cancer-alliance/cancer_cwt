@@ -15,7 +15,7 @@ def performance_31day_first(df):
     df = df.where(
         (in_([col("PATHWAY_CANCERTREATMENTEVENTTYPE")], ["01", "07", "12"])) &
         (col("PATHWAY_CANCERTREATMENTMODALITY") != 98) &
-        not_(is_null(col("CWT_PRIMARYDIAGNOSISICD"))) &
+        not_(is_null(col("CWT_PRIMARYDIAGNOSIS_CODE"))) &
         not_(is_null(col("DATE_CANCERTREATMENTPERIODSTARTDATE"))) &
         not_(is_null(col("DATE_TREATMENTSTARTDATE")))        
     )
