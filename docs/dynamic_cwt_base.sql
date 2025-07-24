@@ -1,4 +1,4 @@
-CREATE OR REPLACE DYNAMIC TABLE DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_BASE (
+CREATE OR REPLACE DYNAMIC TABLE DEV__MODELLING.CANCER__CWT.CWT_BASE (
     --Entry identifiers
     SK VARCHAR, --UUID for rows in the CWT0001 Source table
     RECORD_ID VARCHAR, --UUID for the referral (Not unique)
@@ -203,7 +203,7 @@ SELECT
     --Metadata
     cwt."UniqSubmissionID" AS META_SUBMISSIONID
 
-FROM "Data_Store_Waiting".CWTDS."CWT001Data" cwt
+FROM DATA_LAKE.CWT."CWT001Data" cwt
 
 --Organisation Site and Trust Mapping
 ---Consultant Upgrades---
@@ -224,22 +224,22 @@ ON org_at.ORG_SITE = cwt.ORGTREATSTART
 
 --Reference Information Joins
 ---Primary Diagnosis---
-LEFT JOIN DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_REFERENCE_DATA ref_pd
+LEFT JOIN DEV__MODELLING.CANCER__REF.DIM_CWT_REFERENCE ref_pd
 ON cwt.PRIMARYDIAGNOSISICD = ref_pd.CODE
 AND ref_pd.REFERENCE_CODE = 1
 
 ---Cancer Referral Type---
-LEFT JOIN DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_REFERENCE_DATA ref_rt
+LEFT JOIN DEV__MODELLING.CANCER__REF.DIM_CWT_REFERENCE ref_rt
 ON CAST(cwt.REFTYPE AS INT) = ref_rt.CODE
 AND ref_rt.REFERENCE_CODE = 4
 
 ---Modality---
-LEFT JOIN DATA_LAB_NCL_TRAINING_TEMP.CANCER_CWT.CWT_REFERENCE_DATA ref_mod
+LEFT JOIN DEV__MODELLING.CANCER__REF.DIM_CWT_REFERENCE ref_mod
 ON CAST(cwt.CANCERTREATMENTMODALITY AS INT) = ref_mod.CODE
 AND ref_mod.REFERENCE_CODE = 20
 
 --Clause to remove inactive records
 WHERE EXISTS (
     SELECT NULL 
-    FROM "Data_Store_Waiting".CWTDS."ActiveSystemId" asi 
+    FROM  DATA_LAKE.CWT."ActiveSystemId" asi 
     WHERE asi."dmicSystemId" = cwt."dmicSystemId")
