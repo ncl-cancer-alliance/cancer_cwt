@@ -2,6 +2,7 @@ CREATE OR REPLACE DYNAMIC TABLE DEV__MODELLING.CANCER__CWT.CWT_BASE (
     --Entry identifiers
     SK VARCHAR, --UUID for rows in the CWT0001 Source table
     RECORD_ID VARCHAR, --UUID for the referral (Not unique)
+    PSUEDO_NHS_ID VARCHAR, --NHS Pseudo for the record
 
     --Organisation Fields
     ORG_ACCOUNTABLEINVESTIGATING_TRUST VARCHAR, --Investigating org for 6 Scernarios
@@ -87,7 +88,7 @@ CREATE OR REPLACE DYNAMIC TABLE DEV__MODELLING.CANCER__CWT.CWT_BASE (
 
 )
 COMMENT="Dynamic table to use as an univserial base for CWT data."
-TARGET_LAG = "2 hours"
+TARGET_LAG = "24 hours"
 REFRESH_MODE = FULL
 INITIALIZE = ON_CREATE
 WAREHOUSE = NCL_ANALYTICS_XS
@@ -110,6 +111,8 @@ SELECT
     --Entry identifiers
     cwt.SK,
     cwt.RECORDID AS RECORD_ID,
+    cwt."NHS_NUMBER Pseudo" AS PSUEDO_NHS_ID,
+
     --Organisation Fields
     cwt.ACCOUNTABLEINVESTIGATINGPROVIDER AS ORG_ACCOUNTABLEINVESTIGATING_TRUST,
 
