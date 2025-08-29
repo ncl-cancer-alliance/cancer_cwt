@@ -163,7 +163,7 @@ def create_dynamic_features(transformation_func, params):
     ])
     
     if "fdt_lag" not in params.keys():
-        params["fdt_lag"] = "2 hours"
+        params["fdt_lag"] = "24 hours"
 
     if "fdt_mode" not in params.keys():
         params["fdt_mode"] = "overwrite"
