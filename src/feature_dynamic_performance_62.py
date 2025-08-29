@@ -247,22 +247,24 @@ def performance_62day(df):
     nd24 = not_(d24)
 
     #Dictionary containing patient allocation based on the organisation
+    #Note the numerator values are inversed because the table should show 
+    # breaches whereas the Scenario Allocation Logic is for awarding credit
     dict_6s = {
         "diag":{
-            1:{"num": 0.5, "den":0.5},
-            2:{"num": 0.5, "den":0.5},
+            1:{"num": 0, "den":0.5},
+            2:{"num": 0, "den":0.5},
             3:{"num": 0,   "den":0},
             4:{"num": 0,   "den":0},
-            5:{"num": 0,   "den":1},
-            6:{"num": 0,   "den":0.5},
+            5:{"num": 1,   "den":1},
+            6:{"num": 0.5,   "den":0.5},
         },
         "treat":{
-            1:{"num": 0.5, "den":0.5},
-            2:{"num": 0.5, "den":0.5},
-            3:{"num": 1,   "den":1},
-            4:{"num": 0,   "den":1},
+            1:{"num": 0, "den":0.5},
+            2:{"num": 0, "den":0.5},
+            3:{"num": 0,   "den":1},
+            4:{"num": 1,   "den":1},
             5:{"num": 0,   "den":0},
-            6:{"num": 0,   "den":0.5},
+            6:{"num": 0.5,   "den":0.5},
         }
     }
 
