@@ -1,4 +1,8 @@
-CREATE OR REPLACE DYNAMIC TABLE DEV__MODELLING.CANCER__CWT.CWT_BASE (
+CREATE OR REPLACE DYNAMIC TABLE DEV__MODELLING.CANCER__CWT_PATHWAY.CWT_BASE (
+
+    --Description: Cleaned dataset for the CWT Pathway level data
+    --Author: Jake Kealey
+
     --Entry identifiers
     SK VARCHAR, --UUID for rows in the CWT0001 Source table
     RECORD_ID VARCHAR, --UUID for the referral (Not unique)

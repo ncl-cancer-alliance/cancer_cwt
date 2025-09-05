@@ -1,9 +1,13 @@
-CREATE OR REPLACE DYNAMIC TABLE DEV__MODELLING.CANCER__CWT.CWT_62DAYBREAKDOWN (
+CREATE OR REPLACE DYNAMIC TABLE DEV__MODELLING.CANCER__CWT_PATHWAY.CWT_62DAYBREAKDOWN (
+
+    --Description: Further breakdown fields for patients on the 62 Day pathway
+    --Author: Jake Kealey
+
     RECORD_ID VARCHAR,
-	D62_ACC_DIAGNOSTIC VARCHAR,
-	D62_ACC_TREATMENT VARCHAR,
-    D62_ALLOCATIONMETHOD VARCHAR,
-    D62_6S_SCENARIO NUMBER
+	D62_ACC_DIAGNOSTIC VARCHAR, --Accountable Diagnostic Provider Code
+	D62_ACC_TREATMENT VARCHAR, --Accountable Treatment Provider Code
+    D62_ALLOCATIONMETHOD VARCHAR, --Method used to calculate the patient allocation between accountable providers
+    D62_6S_SCENARIO NUMBER --If the allocation method is "6 Scenarios", which Scenario was used
 )
 COMMENT="Breakdown for 62 Day pathway records."
 TARGET_LAG = "24 hours"

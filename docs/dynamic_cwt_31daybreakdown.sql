@@ -1,7 +1,11 @@
-CREATE OR REPLACE DYNAMIC TABLE DEV__MODELLING.CANCER__CWT.CWT_31DAYBREAKDOWN (
+CREATE OR REPLACE DYNAMIC TABLE DEV__MODELLING.CANCER__CWT_PATHWAY.CWT_31DAYBREAKDOWN (
+	
+	--Description: Further breakdown fields for patients on the 62 Day pathway
+    --Author: Jake Kealey
+
     RECORD_ID VARCHAR,
-	D31_FIRST BOOLEAN,
-	D31_BREAKDOWN VARCHAR
+	D31_FIRST BOOLEAN, --If the row is a first or subsequent 31 Day pathway
+	D31_BREAKDOWN VARCHAR --Subcategory of pathway 
 )
 COMMENT="Breakdown for 31 Day pathway records."
 TARGET_LAG = "24 hours"
