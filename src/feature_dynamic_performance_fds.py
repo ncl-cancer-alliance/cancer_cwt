@@ -35,10 +35,10 @@ def performance_fds(df):
     #Filter out to only valid FDS records
     df = df.where(
         (
-            (in_([col("PATHWAY_FDPENDREASON")], ["01", "02", "04"])) |
+            (in_([col("PATHWAY_FDPENDREASON_CODE")], ["01", "02", "04"])) |
             (
-                (col("PATHWAY_FDPENDREASON") == "03") &
-                (col("PATHWAY_FDPEXCLUSIONREASON") == "01") &
+                (col("PATHWAY_FDPENDREASON_CODE") == "03") &
+                (col("PATHWAY_FDPEXCLUSIONREASON_CODE") == "01") &
                 (col("PER_VALUE") > 28)
             )
         ) &
@@ -71,7 +71,7 @@ def performance_fds(df):
 
     df = df.with_column(
         "PER_ORG_NCL",
-        df["GEO_TRUST_FDS"]
+        df["IS_GEO_TRUST_FDS"]
     )
 
     #Set the metric name
