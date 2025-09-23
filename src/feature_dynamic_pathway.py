@@ -21,14 +21,14 @@ def determine_pathway(df):
     
     pathway_usc = (
         (col("PATHWAY_PRIORITYTYPE_CODE") == 3) &
-        (col("PATHWAY_REFERRALTYPE_CODE") != 16) &
+        (col("CWT_CANCERREFERALTYPE_CODE") != 16) &
         (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT_CODE") != 17) &
         is_null(col("DATE_CONSULTANTUPGRADEDATE"))
     )
 
     pathway_breastsymp = (
         (col("PATHWAY_PRIORITYTYPE_CODE") == 3) &
-        (col("PATHWAY_REFERRALTYPE_CODE") == 16) &
+        (col("CWT_CANCERREFERALTYPE_CODE") == 16) &
         (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT_CODE") != 17) &
         is_null(col("DATE_CONSULTANTUPGRADEDATE"))
     )
