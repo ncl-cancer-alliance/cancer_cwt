@@ -15,14 +15,14 @@ def performance_62day(df):
 
     #Define Upgrade pathway as some logic is dependent on it
     pathway_upgrade = (
-        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") != 17) &
+        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT_CODE") != 17) &
         not_(is_null(col("DATE_CONSULTANTUPGRADEDATE")))
     )
      
     #Filter out to only valid 62 Day records
     df = df.where(
-        (in_([col("PATHWAY_CANCERTREATMENTEVENTTYPE")], ["01", "07", "12"])) &
-        (col("PATHWAY_CANCERTREATMENTMODALITY") != 98) &
+        (in_([col("PATHWAY_CANCERTREATMENTEVENTTYPE_CODE")], ["01", "07", "12"])) &
+        (col("PATHWAY_CANCERTREATMENTMODALITY_CODE") != 98) &
         not_(is_null(col("CWT_PRIMARYDIAGNOSIS_CODE"))) &
         not_(is_null(col("DATE_CANCERTREATMENTPERIODSTARTDATE"))) &
         not_(is_null(col("DATE_TREATMENTSTARTDATE"))) &
@@ -147,7 +147,7 @@ def performance_62day(df):
 
     df_solo = df_solo.with_column(
         "PER_ORG_NCL",
-        df_solo["GEO_TRUST_TREATMENTSTARTDATE"]
+        df_solo["IS_GEO_TRUST_TREATMENTSTARTDATE"]
     )
 
     #5050##################################################
@@ -178,9 +178,9 @@ def performance_62day(df):
     df_5050_diag = df_5050_diag.with_column(
         "PER_ORG_NCL",
         coalesce(
-            col("GEO_TRUST_ACCOUNTABLEINVESTIGATING"),
-            col("GEO_TRUST_CONSULTANTUPGRADE"),
-            col("GEO_TRUST_DATEFIRSTSEEN")
+            col("IS_GEO_TRUST_ACCOUNTABLEINVESTIGATING"),
+            col("IS_GEO_TRUST_CONSULTANTUPGRADE"),
+            col("IS_GEO_TRUST_DATEFIRSTSEEN")
         )
     )
 
@@ -198,7 +198,7 @@ def performance_62day(df):
 
     df_5050_treat = df_5050_treat.with_column(
         "PER_ORG_NCL",
-        df_solo["GEO_TRUST_TREATMENTSTARTDATE"]
+        df_solo["IS_GEO_TRUST_TREATMENTSTARTDATE"]
     )
 
     df_5050 = df_5050_diag.union_all(df_5050_treat)
@@ -295,9 +295,9 @@ def performance_62day(df):
     df_6s_diag = df_6s_diag.with_column(
         "PER_ORG_NCL",
         coalesce(
-            col("GEO_TRUST_ACCOUNTABLEINVESTIGATING"),
-            col("GEO_TRUST_CONSULTANTUPGRADE"),
-            col("GEO_TRUST_DATEFIRSTSEEN")
+            col("IS_GEO_TRUST_ACCOUNTABLEINVESTIGATING"),
+            col("IS_GEO_TRUST_CONSULTANTUPGRADE"),
+            col("IS_GEO_TRUST_DATEFIRSTSEEN")
         )
     )
 
@@ -340,7 +340,7 @@ def performance_62day(df):
 
     df_6s_treat = df_6s_treat.with_column(
         "PER_ORG_NCL",
-        df_solo["GEO_TRUST_TREATMENTSTARTDATE"]
+        df_solo["IS_GEO_TRUST_TREATMENTSTARTDATE"]
     )
 
     #Create a copy for the 38 Day Performance

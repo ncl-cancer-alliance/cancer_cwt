@@ -20,26 +20,26 @@ def determine_pathway(df):
     """
     
     pathway_usc = (
-        (col("PATHWAY_PRIORITYTYPECODE") == 3) &
-        (col("PATHWAY_REFERRALTYPE") != 16) &
-        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") != 17) &
+        (col("PATHWAY_PRIORITYTYPE_CODE") == 3) &
+        (col("CWT_CANCERREFERALTYPE_CODE") != 16) &
+        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT_CODE") != 17) &
         is_null(col("DATE_CONSULTANTUPGRADEDATE"))
     )
 
     pathway_breastsymp = (
-        (col("PATHWAY_PRIORITYTYPECODE") == 3) &
-        (col("PATHWAY_REFERRALTYPE") == 16) &
-        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") != 17) &
+        (col("PATHWAY_PRIORITYTYPE_CODE") == 3) &
+        (col("CWT_CANCERREFERALTYPE_CODE") == 16) &
+        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT_CODE") != 17) &
         is_null(col("DATE_CONSULTANTUPGRADEDATE"))
     )
 
     pathway_screening = (
-        (col("PATHWAY_PRIORITYTYPECODE") == 2) &
-        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") == 17)
+        (col("PATHWAY_PRIORITYTYPE_CODE") == 2) &
+        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT_CODE") == 17)
     )
 
     pathway_upgrade = (
-        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") != 17) &
+        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT_CODE") != 17) &
         not_(is_null(col("DATE_CONSULTANTUPGRADEDATE")))
     )
 

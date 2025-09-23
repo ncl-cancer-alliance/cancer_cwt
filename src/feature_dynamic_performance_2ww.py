@@ -14,8 +14,8 @@ import utils.util_snowflake as us
 def performance_2ww(df):
     #Filter out to only valid 2ww records
     df = df.where(
-        (col("PATHWAY_PRIORITYTYPECODE") == 3) &
-        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT") != 17) &
+        (col("PATHWAY_PRIORITYTYPE_CODE") == 3) &
+        (col("PATHWAY_SOURCEOFREFERRALFOROUTPATIENT_CODE") != 17) &
         not_(is_null(col("DATE_CANCERREFERRALTOTREATMENTPERIODSTARTDATE"))) &
         not_(is_null(col("DATE_DATEFIRSTSEEN")))        
     )
@@ -45,7 +45,7 @@ def performance_2ww(df):
 
     df = df.with_column(
         "PER_ORG_NCL",
-        df["GEO_TRUST_DATEFIRSTSEEN"]
+        df["IS_GEO_TRUST_DATEFIRSTSEEN"]
     )
 
     #Set the metric name

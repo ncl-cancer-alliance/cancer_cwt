@@ -13,9 +13,9 @@ import utils.util_snowflake as us
 def performance_31day_sub(df):
     #Filter out to only valid 31 Day (Subsequent Treatments) records
     df = df.where(
-        (in_([col("PATHWAY_CANCERTREATMENTEVENTTYPE")], 
+        (in_([col("PATHWAY_CANCERTREATMENTEVENTTYPE_CODE")], 
              ["02", "03", "04", "05", "06", "08", "09", "10", "11"])) &
-        (col("PATHWAY_CANCERTREATMENTMODALITY") != 98) &
+        (col("PATHWAY_CANCERTREATMENTMODALITY_CODE") != 98) &
         not_(is_null(col("CWT_PRIMARYDIAGNOSIS_CODE"))) &
         not_(is_null(col("DATE_CANCERTREATMENTPERIODSTARTDATE"))) &
         not_(is_null(col("DATE_TREATMENTSTARTDATE")))        
@@ -24,13 +24,13 @@ def performance_31day_sub(df):
     #Add field for 31 Day Breakdown
     df = df.with_column(
         "D31_BREAKDOWN",
-        when(in_([col("PATHWAY_CANCERTREATMENTMODALITY")], 
+        when(in_([col("PATHWAY_CANCERTREATMENTMODALITY_CODE")], 
                  ["02", "03", "14", "15"]), 
              "Anti Cancer Drug Treatment")
-        .when(in_([col("PATHWAY_CANCERTREATMENTMODALITY")], 
+        .when(in_([col("PATHWAY_CANCERTREATMENTMODALITY_CODE")], 
                   ["01", "23", "24"]), 
              "Surgery")
-        .when(in_([col("PATHWAY_CANCERTREATMENTMODALITY")], 
+        .when(in_([col("PATHWAY_CANCERTREATMENTMODALITY_CODE")], 
                   ["04", "05", "06", "13"]), 
              "Radiotherapy")
         .otherwise("Unknown")
@@ -63,7 +63,7 @@ def performance_31day_sub(df):
 
     df = df.with_column(
         "PER_ORG_NCL",
-        df["GEO_TRUST_TREATMENTSTARTDATE"]
+        df["IS_GEO_TRUST_TREATMENTSTARTDATE"]
     )
 
     #Set the metric name
