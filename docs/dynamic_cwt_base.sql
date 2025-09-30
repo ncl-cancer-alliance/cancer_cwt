@@ -6,7 +6,7 @@ CREATE OR REPLACE DYNAMIC TABLE DEV__MODELLING.CANCER__CWT_PATHWAY.CWT_BASE (
     --Entry identifiers
     SK_CWT_ID VARCHAR, --UUID for rows in the CWT0001 Source table
     RECORD_ID VARCHAR, --UUID for the referral (Not unique)
-    PSUEDO_NHS_ID VARCHAR, --NHS Pseudo for the record
+    SK_PATIENT_ID VARCHAR, --NHS Pseudo for the record
 
     --Organisation Fields
     ORG_ACCOUNTABLEINVESTIGATING_TRUST VARCHAR, --Investigating org for 6 Scernarios
@@ -124,7 +124,7 @@ SELECT
     --Entry identifiers
     cwt.SK AS SK_CWT_ID,
     cwt.RECORDID AS RECORD_ID,
-    cwt."NHS_NUMBER Pseudo" AS PSUEDO_NHS_ID,
+    cwt."NHS_NUMBER Pseudo" AS SK_PATIENT_ID,
 
     --Organisation Fields
     cwt.ACCOUNTABLEINVESTIGATINGPROVIDER AS ORG_ACCOUNTABLEINVESTIGATING_TRUST,
